@@ -2,10 +2,12 @@ package com.bot.telegram.service;
 
 import java.io.IOException;
 
+import org.apache.log4j.Logger;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.select.Elements;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DataAccessException;
 import org.springframework.stereotype.Service;
 
 import com.bot.telegram.component.entities.Replacement;
@@ -21,6 +23,8 @@ import com.bot.telegram.component.interfaces.IReplacementGeneral;
  */
 @Service
 public class ParseReplacement {
+
+	private final static Logger LOGGER = Logger.getLogger(ParseReplacement.class);
 
 	@Autowired
 	private IReplacement iReplacement;
@@ -92,6 +96,10 @@ public class ParseReplacement {
 
 			iReplacementGeneral.save(replacementGeneral);
 
+			LOGGER.info(String.format(
+					"MySQL | INSERT | Insert into replacement_general table. Id:[%s]; \t Date of replacement:[%s]",
+					replacementGeneral.getId(), replacementGeneral.getDateOfReplacement()));
+
 			for (int i = 0; i < tableWithReplacement.size(); i++) {
 				if (tableWithReplacement.get(i).select("td").size() == 6) {
 					Replacement replacement = new Replacement();
@@ -111,11 +119,17 @@ public class ParseReplacement {
 					replacement.setReplacementGeneralId(replacementGeneral.getId());
 
 					iReplacement.save(replacement);
+
+					LOGGER.info(String.format(
+							"MySQL | INSERT | Insert into replacement table. Id:[%s]; \t ReplacementGeneralId:[%s]",
+							replacement.getId(), replacementGeneral.getId()));
 				}
 			}
 
 		} catch (IOException e) {
-			e.printStackTrace();
+			LOGGER.error(e.getMessage());
+		} catch (DataAccessException e) {
+			LOGGER.warn(e.getMessage());
 		}
 	}
 
@@ -130,15 +144,18 @@ public class ParseReplacement {
 	 */
 	private String parseNameGroup(Elements tableWithReplacement, Replacement replacement, int i) {
 		String nameGroup;
-		if (tableWithReplacement.get(i).select("td:nth-child(1)").text().length() != 0) {
+		if (tableWithReplacement.get(i).select("td:nth-child(1)").text().length() != 0
+				&& tableWithReplacement.get(i).select("td:nth-child(1)").text().length() != 1) {
 			nameGroup = tableWithReplacement.get(i).select("td:nth-child(1)").text();
 		} else {
 			nameGroup = tableWithReplacement.get(i - 1).select("td:nth-child(1)").text();
 
-			if (tableWithReplacement.get(i - 1).select("td:nth-child(1)").text().length() == 0) {
+			if (tableWithReplacement.get(i - 1).select("td:nth-child(1)").text().length() == 0
+					&& tableWithReplacement.get(i - 1).select("td:nth-child(1)").text().length() == 1) {
 				nameGroup = tableWithReplacement.get(i - 2).select("td:nth-child(1)").text();
 
-				if (tableWithReplacement.get(i - 2).select("td:nth-child(1)").text().length() == 0) {
+				if (tableWithReplacement.get(i - 2).select("td:nth-child(1)").text().length() == 0
+						&& tableWithReplacement.get(i - 2).select("td:nth-child(1)").text().length() == 1) {
 					nameGroup = tableWithReplacement.get(i - 3).select("td:nth-child(1)").text();
 				}
 			}
