@@ -29,6 +29,8 @@ bin/
 *.sar
 *.class
 
+.springBeans
+
 # eclipse project file
 .settings/
 .classpath
